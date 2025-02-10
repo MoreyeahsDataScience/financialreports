@@ -8,12 +8,12 @@ from langchain_community.vectorstores import FAISS
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.chains.question_answering import load_qa_chain
 from langchain.prompts import PromptTemplate
-from dotenv import load_dotenv
+# from dotenv import load_dotenv
 import time
 
 # Load environment variables and configure
-load_dotenv()
-genai.configure(api_key= "AIzaSyB798GofH8tgcotUrXYu1Wf38AA_XTisYM")
+# load_dotenv()
+# genai.configure(api_key= "AIzaSyB798GofH8tgcotUrXYu1Wf38AA_XTisYM")
 
 # Set page configuration
 st.set_page_config(
@@ -65,10 +65,12 @@ def load_css():
     """, unsafe_allow_html=True)
 
 def extract_text_from_pdf(pdf_file):
+    print("Started extracting")
     pdf_reader = PdfReader(pdf_file)
     text = ""
     for page in pdf_reader.pages:
         text += page.extract_text()
+        print("extracted text")
     return text
 
 def get_text_chunks(text):
@@ -77,7 +79,7 @@ def get_text_chunks(text):
     return chunks
 
 def get_vector_store(text_chunks):
-    embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
+    embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001",google_api_key="AIzaSyB798GofH8tgcotUrXYu1Wf38AA_XTisYM")
     vector_store = FAISS.from_texts(text_chunks, embedding=embeddings)
     vector_store.save_local("faiss_index")
 
@@ -99,18 +101,19 @@ Follow these guidelines:
 
 ### **Expert Financial Analysis & Answer:**  
 """
-    model = ChatGoogleGenerativeAI(model="gemini-1.5-flash", temperature=0.3)
+    model = ChatGoogleGenerativeAI(model="gemini-1.5-flash", temperature=0.3, api_key="AIzaSyB798GofH8tgcotUrXYu1Wf38AA_XTisYM")
     prompt = PromptTemplate(template=prompt_template, input_variables=["context", "question"])
     chain = load_qa_chain(model, chain_type="stuff", prompt=prompt)
     return chain
 
 def process_user_input(user_question):
-    embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
+    print("Started Processing")
+    embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001", google_api_key="AIzaSyB798GofH8tgcotUrXYu1Wf38AA_XTisYM")
     new_db = FAISS.load_local("faiss_index", embeddings, allow_dangerous_deserialization=True)
 
     docs = new_db.similarity_search(user_question)
     chain = get_conversational_chain()
-
+    print("Started Chaining")
     try:
         response = chain.invoke({"input_documents": docs, "question": user_question})
         return response["output_text"]
